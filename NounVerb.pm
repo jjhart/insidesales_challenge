@@ -1,60 +1,35 @@
 package Getopt::NounVerb;
 use base qw(Exporter);
-@EXPORT_OK = qw(parse_opts opt);
-%EXPORT_TAGS = ( all   => \@EXPORT_OK );
+@EXPORT_OK = qw(get_nv_opts);
+%EXPORT_TAGS = ( all => \@EXPORT_OK );
 
-use Getopt::Long qw(GetOptionsFromArray);
+use strict;
+use warnings;
+
+use Getopt::Resolved qw(get_opts gen_help_table);
 use File::Basename;
 
 #--------------------------------------------------------------------------------
 # EXPORTED
 #--------------------------------------------------------------------------------
 
-# Returns Getopt::NounVerb::Op structure:
-# { noun => 'noun', verb => 'verb', opts => { a => 1, b => 2 }, defaults => { a => { d => sub { 1 }, h => '....' }, b => 'help text' }}
-
-# TODO - write some POD for this bad larry
-
-# TODO - allow user to specify alternate tags for 'h' and 'd' - skipping for now
-# b/c it requires carting around a bunch of extra params or bundling them up into
-# an object
-
-# TODO - add bash completion (see Term::Bash::Completion::Generator ?)
-sub parse_opts {
-	my ($cmds, %myopts) = @_;
-	my $argv = $myopts{ARGV} || \@ARGV;
+sub get_nv_opts {
+	my ($cmds, $argv) = (shift, shift || \@ARGV); 
 
 	my ($noun, $verb, $help) = parse_noun_verb($argv);
-	help_exit($cmds, $noun, $verb) unless $noun && $verb && $cmds->{$noun}->{$verb};
+	helpdie($cmds, $noun, $verb) unless $noun && $verb && $cmds->{$noun}->{$verb};
 	
-	help_exit($cmds, $noun, $verb) if $help || (@$argv && $argv->[0] !~ /^-/);  # easy to forget to dash the first option if it's very common; catch that situation and give good help
+	helpdie($cmds, $noun, $verb) if $help || (@$argv && $argv->[0] !~ /^-/);  # easy to forget to dash the first option if it's very common; catch that situation and give good help
 
-	my $op = Getopt::NounVerb::Op->new({ noun => $noun, verb => $verb, defaults => $cmds->{$noun}->{$verb}, opts => {} });
+	my $opts = eval { get_opts(get_resolver_defaults($cmds, $noun, $verb), $argv); };
+	$@ and helpdie($cmds, $noun, $verb, $@);
 
-	GetOptionsFromArray($argv, $op->opts, 'verbose', map { "$_=s" } hkeys($op->defaults)) or help_exit($cmds, $noun, $verb);
-
-	# copy values from defaults to opts, calling any necessary functions along the way, and bailing if a required option (no default value) is missing
-	map { $op->opts->{$_} ||= $op->opt($_); defined $op->opts->{$_} or help_exit($cmds, $noun, $verb, "Missing required parameter: $_") }
-		sort { oprank($op, $a) <=> oprank($op, $b) } # verify options-without-defaults first so we don't get "uninitialized value" warnings if a default value sub references another value
-			hkeys($op->defaults);
-
-	$op;
+	($noun, $verb, $opts);
 	}
 
 #--------------------------------------------------------------------------------
 # option resolution
 #--------------------------------------------------------------------------------
-
-# keys of the given hashref, skipping 'h'
-sub hkeys { my ($hash) = @_; grep { $_ ne 'h' } keys(%$hash); }
-
-# sort order when resolving option
-sub oprank {
-	my ($op, $k) = @_;
-	return 0 unless ref($op->defaults->{$k});      # no default value
-	return 1 unless ref($op->defaults->{$k}->{d}); # default value is scalar
-	return 2;                                      # default value is subroutine
-	}
 
 # consume the noun & verb from @$argv
 # 'help' may appear before, after, or between the noun & verb
@@ -71,64 +46,143 @@ sub parse_noun_verb {
 	(shift(@$argv), shift(@$argv), $help);
 	}
 
+sub get_resolver_defaults {
+	my ($cmds, $noun, $verb) = @_;
+	my %d = %{$cmds->{$noun}->{$verb}}; # take a copy of the hash
+	delete $d{h}; # delete the help for the verb itself
+	\%d; # return a new reference
+	}
+
 #--------------------------------------------------------------------------------
 # help text generation
 #--------------------------------------------------------------------------------
 
-sub help_exit {
-  my ($cmds, $noun, $verb, $err) = @_;
+# keys of the given hashref, skipping 'h'
+sub hkeys { my ($hash) = @_; grep { $_ ne 'h' } keys(%$hash); }
+
+sub helpdie {
+  my ($cmds, $noun, $verb, $resolver_err) = @_;
   $verb = 'VERB' unless $verb && $noun && exists $cmds->{$noun}->{$verb};
   $noun = 'NOUN' unless          $noun && exists $cmds->{$noun};
 
-  print "\nERROR: $err\n" if $err;
+  my $err .= sprintf("\nUsage: %s %s %s <OPTIONS>\n", basename($0), $noun, $verb);
 
-  printf("\nUsage: %s %s %s <OPTIONS>\n\n", basename($0), $noun, $verb);
+	# noun not specified - list all nouns
+	die($err . "\n" . gen_help_table('noun', 'description', map { $_ => $cmds->{$_}->{h} } hkeys($cmds))) if $noun eq 'NOUN';
 
-	print_help_table('noun', 'description', map { $_ => $cmds->{$_}->{h} } hkeys($cmds)), exit(1) if $noun eq 'NOUN';
+	# verb not given - list verbs for noun
+	die($err . "\n" . gen_help_table('verb', 'description', map { $_ => $cmds->{$noun}->{$_}->{h} } hkeys($cmds->{$noun}) )) if $verb eq 'VERB';
 
-	print_help_table('verb', 'description', map { $_ => $cmds->{$noun}->{$_}->{h} } hkeys($cmds->{$noun}) ), exit(1) if $verb eq 'VERB';
+	# tried to resolve options, but got an error
+	chomp($resolver_err), die($err . $resolver_err) if $resolver_err;
 
+	# have a noun & verb, but didn't try to resolve = "help" was specified in the first 3 arguments
 	my $cmd = $cmds->{$noun}->{$verb};
-	print_help_table('option', 'value', map { $_ => ref($cmd->{$_}) ? $cmd->{$_}->{h} : $cmd->{$_} } hkeys($cmd));
-
-	exit(1);
+	# note this is generates the same help text that "Resolved" would have, were it called with "--help" as its first argument
+	die($err . "\n" . gen_help_table('option', 'value', map { $_ => ref($cmd->{$_}) ? $cmd->{$_}->{h} : $cmd->{$_} } hkeys($cmd)));
 	}
 
-sub print_help_table {
-	my ($label1, $label2, %data) = @_;
-	use Data::Dump qw(dump);
-  my $len = maxlen($label1, keys(%data));
-  my $fmt = "  %-${len}s  %s\n";
-  printf($fmt, $label1, $label2);
-  printf($fmt, '-'x$len, '-'x(80-2-$len)); # two for the leading spaces
-	map { printf($fmt, $_, $data{$_}) } hkeys(\%data);
-	print "\n";
-	}
-
-sub maxlen {
-	my $ret = 0;
-	map { $ret = length > $ret ? length : $ret } @_;
-	$ret;
-	}
-
-
-# helper package, provides accessors for the Op structure
-package Getopt::NounVerb::Op;
-use base qw(Class::Accessor);
-__PACKAGE__->mk_accessors(qw(noun verb opts defaults));
-
-# Returns the value for the given key
-# (as found in 'opts' or 'defaults')
-sub opt {
-	my ($self, $k) = @_;
-	my $v = $self->opts->{$k};
-	return $v if defined $v;
-
-	my $defaults = $self->defaults;
-	return undef unless ref($defaults->{$k}) eq 'HASH'; # no default specified
-
-	$v = $defaults->{$k}->{d}; # 'd' holds the default value-or-function
-	ref($v) eq 'CODE' ? $v->($self) : $v;
-	}
 
 1;
+
+
+__END__
+
+=pod
+
+=head1 Getopt::NounVerb
+
+=head2 SYNOPSIS
+
+	use Getopt::NounVerb qw(get_nv_opts);
+
+	my ($noun, $verb, $opts) = get_nv_opts({
+		local           => { h => 'commands to run locally',
+			compile       => { h => 'compile the project found in cwd',
+				release     => { h => 'compile for release?  default no', d => 0 },
+				optimize    => { h => 'enable optimizaion flags.  default yes', d => 1 }
+				},
+			},
+		aa              => { h => 'Absolute Automation management routines',
+			'swap-server' => { h => 'Replace an existing automate server with a new one',
+				old         => 'Old instance ID or name',
+				new         => 'New instance ID or name',
+				},
+			'ssh'         => { h => 'Run an SSH command in parallel against multiple servers',
+				servers     => { h => "comma-separated list of servers", x => sub { [split(',',shift) ] } },
+				command     => 'Command to run',
+				},
+			}
+		});
+	
+	# at this point noun, verb, and opts will all be set.
+	# $noun is guaranteed to be 'local' or 'aa', and likewise
+	# $verb will be on of the acceptable verbs for the given noun
+	# 
+	# if not, get_nv_opts will have already died with a pretty error message
+
+
+
+=head2 COMMAND LINE
+
+Getopt::NounVerb will automatically generate help docs at the appropriate level of detail
+
+Following our example above, if you execute your script with no options, you get this output:
+
+	$ script          # or "script help" or "script --help"
+	
+	Usage: script NOUN VERB <OPTIONS>
+	
+		noun    description
+		------  ------------------------------------------------------------------------
+		local   commands to run locally
+		aa      Absolute Automation management routines
+
+If you specify a noun, but no verb, you get the right list of verbs:
+
+	$ script aa       # or "script help aa" etc
+	
+	Usage: script aa VERB <OPTIONS>
+	
+		verb         description
+		-----------  -------------------------------------------------------------------
+		swap-server  Replace an existing automate server with a new one
+		ssh          Run an SSH command in parallel against multiple servers
+
+
+And, finally, if you specify a noun & verb but don't given appropriate options:
+
+	$ script aa ssh
+	
+	Usage: script aa ssh <OPTIONS>
+	
+	ERROR: Missing required parameter: command
+	
+		option   value
+		-------  -----------------------------------------------------------------------
+		servers  comma-separated list of servers; defaults to 'automate'
+		command  Command to run
+
+
+
+=head2 DESCRIPTION
+
+Wrapper for Getopt::Resolved that provides noun/verb semantics for your script.
+
+Useful to ensure your --help text remains concise and appropriate to the task at hand.
+
+Just like "git help log" doesn't tell you the options for "git branch", nor should
+your scripts have a one-size-fits-all approach to help text.
+
+
+=head2 EXPORTED FUNCTIONS
+
+No functions are exported by default
+
+=over 4
+
+=item get_nv_opts commands=HASHREF args=[ARRAYREF]
+
+Returns a (noun, verb, options) list as described above.
+
+=cut
