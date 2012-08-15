@@ -35,6 +35,7 @@ HERE
 # positive tests
 #--------------------------------------------------------------------------------
 is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', timeout => 30, prefix => undef}, get_opts($testspec, [qw(-n foo)]), 'undef default value');
+is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', timeout => 30, prefix => undef, verbose => 1}, get_opts($testspec, [qw(-n foo -v)]), 'verbose flag added');
 is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', timeout => 'TWENNYNI!', prefix => undef}, get_opts($testspec, [qw(-n foo -t 29)]), 'timeout transformed');
 
 #--------------------------------------------------------------------------------
@@ -44,6 +45,14 @@ ok_die('automatically adds --help option', [qw(--help)]);
 ok_die('type mismatch', [qw(-t yada)], 'ERROR: Value "yada" invalid for option timeout (number expected)');
 ok_die('required opt missing', [], 'ERROR: Missing required option: namespace');
 ok_die('queue name failed verifidation', [qw(-n fo)], 'ERROR: queue too short');
+
+# turn off EXTRA_OPTS, get error when -v *or* -h present
+my @tmp = @Getopt::Resolved::EXTRA_OPTS;
+@Getopt::Resolved::EXTRA_OPTS = ();
+ok_die('extra_opts removed = verbose not supported', [qw(-n foo -verbose)], 'ERROR: Unknown option: verbose');
+ok_die('extra_opts removed = verbose not supported', [qw(-n foo -v)], 'ERROR: Unknown option: v');
+ok_die('extra_opts removed = help not supported', [qw(-n foo -h)], 'ERROR: Unknown option: h');
+@Getopt::Resolved::EXTRA_OPTS = @tmp;
 
 
 sub ok_die {

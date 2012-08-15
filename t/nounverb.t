@@ -75,6 +75,7 @@ HERE
 # positive tests
 #--------------------------------------------------------------------------------
 is_deeply( [ 'aa', 'ssh', { servers => [qw(s1 s2)], command => 'foo' } ], [ get_nv_opts($testcmds, [qw(aa ssh -c foo -s), 's1,s2']) ], 'standard usage with arrayref transform');
+is_deeply( [ 'aa', 'ssh', { servers => [qw(s1 s2)], command => 'foo', verbose => 1} ], [ get_nv_opts($testcmds, [qw(aa ssh -c foo -v -s), 's1,s2']) ], 'standard usage with extra_opts (verbose)');
 
 #--------------------------------------------------------------------------------
 # negative tests

@@ -6,6 +6,8 @@ use base qw(Exporter);
 use strict;
 use warnings;
 
+our @EXTRA_OPTS = qw(help verbose);
+
 use Getopt::Long qw(GetOptionsFromArray);
 
 #--------------------------------------------------------------------------------
@@ -57,7 +59,7 @@ sub gen_help_table {
 sub read_opts {
 	my ($d, $argv) = (shift, shift || \@ARGV); 
 	my $o = {};
-	my ($stderr, $ok) = catch_stderr(sub { GetOptionsFromArray($argv, $o, 'help', getopt_long_spec($d)); });
+	my ($stderr, $ok) = catch_stderr(sub { GetOptionsFromArray($argv, $o, @EXTRA_OPTS, getopt_long_spec($d)); });
 	helpdie($d, $stderr) unless $ok;
 	helpdie($d) if delete $o->{help};
 	$o;
@@ -164,18 +166,21 @@ __END__
 
 =head2 SYNOPSIS
 
-	use Getopt::Resolved qw(get_opts);
+  use Getopt::Resolved qw(get_opts);
 
-	my $opts = get_opts({
-		namespace => 'operational namespace',
-		timeout   => { h => 'HTTP timeout.  Default 30 seconds', d => 30, t => 'i' },
-		prefix    => { h => 'Optional URL prefix', d => '' },
-		queue     => { h => 'queue to which to post. Defaults to the namespace', d => sub { shift->('namespace') } },
-		});
-	
-	# at this point $opts->{namespace}, $opts->{timeout}, etc will exist
-	# or get_opts will have already died with a pretty error message
-	
+  my $opts = get_opts({
+    namespace => 'operational namespace',
+    prefix    => { h => 'Optional URL prefix', d => '' },
+    timeout   => { h => 'HTTP timeout.  Default 30 seconds',
+                   d => 30,
+                   t => 'i' },
+    queue     => { h => 'queue to which to post. Defaults to the namespace',
+                   d => sub { shift->('namespace') } },
+    });
+  
+  # at this point $opts->{namespace}, $opts->{timeout}, etc will exist
+  # or get_opts will have already died with a pretty error message
+  
 
 =head2 DESCRIPTION
 
@@ -195,22 +200,35 @@ Things this module does:
 
 =over 4
 
+
 =item help text
 
 Options are provided with their description.  If required options are omitted or fail to resolve,
 get_opts will die with your --help text already generated.
 
-	$opts = get_opts({ namespace => 'operational namespace' });
+  $opts = get_opts({ namespace => 'operational namespace' });
 
 If 'namespace' wasn't given, your script will die with this output:
 
-	ERROR: Missing required option: namespace
-		option     value
-		---------  --------------------------------------------------------------------
-		namespace  operational namespace
-	
-Note that, even if not specified, "help" is accepted as an option so that '--help'
-will always print-help-and-die.
+  ERROR: Missing required option: namespace
+    option     value
+    ---------  --------------------------------------------------------------------
+    namespace  operational namespace
+  
+
+=item 'help' and 'verbose' flags
+
+This module automatically adds 'help' and 'verbose' flags to its GetOptions specification.
+
+This can be prevented by emptying the @Getopt::Resolved::EXTRA_OPTS list (whose default
+value is qw(help verbose)):
+
+  @Getopt::Resolved::EXTRA_OPTS = (); # prevent 'help' and 'verbose' from being accepted
+  my $opts = get_opts($d);  # only keys in $d accepted
+
+If --help is specified on the command line, get_opts will die with a pretty error message,
+whereas 'verbose' will simply be return in the get_opts hash.
+
 
 =item default values
 
@@ -218,26 +236,30 @@ Provide default values for your options.
 
 This can be a simple scalar value:
 
-	$opts = get_opts({ timeout => { h => 'HTTP timeout.  Default 30 seconds', d => 30 } });
+  $opts = get_opts({ timeout => { h => 'HTTP timeout.  Default 30 seconds',
+                                  d => 30 } });
 
 Or a function:
 
-	$opts = get_opts({ timeout => { h => 'HTTP timeout.  Defaults to less than 30 seconds', d => sub { time() % 30 } } });
+  $opts = get_opts({ timeout => { h => 'HTTP timeout.  Defaults to less than 30 seconds',
+                                  d => sub { time() % 30 } } });
 
 Functional defaults can reference other option values:
 
-	$opts = get_opts({
-		namespace => 'operational namespace',
-		queue     => { h => 'queue to which to post. Defaults to the namespace', d => sub { shift->('namespace') } },
-		});
+  $opts = get_opts({
+    namespace => 'operational namespace',
+    queue     => { h => 'queue to which to post. Defaults to the namespace', 
+                   d => sub { shift->('namespace') } },
+    });
 
 Your subroutine can, of course, do anything it wants:
 
-	$opts = get_opts({
-		namespace => 'operational namespace',
-		prefix    => { h => 'optional URL prefix', d => '' },
-		queue     => { h => 'queue to which to post', d => sub { sprintf('%s-%s', shift->('prefix', 'namespace')); } },
-		});
+  $opts = get_opts({
+    namespace => 'operational namespace',
+    prefix    => { h => 'optional URL prefix', d => '' },
+    queue     => { h => 'queue to which to post',
+                   d => sub { sprintf('%s-%s', shift->('prefix', 'namespace')); } },
+    });
 
 As shown, these functions are given as their first (and only) argument a closure which can be used to get the
 values of other options.
@@ -247,57 +269,64 @@ Circular option references are not supported.  Nor is dividing by zero =)
 Options without default values are assumed to be required - that is, their absence will cause get_opts to die
 with its pretty error message.  To avoid this, provide any value (even undef).
 
-	$opts = get_opts({ prefix    => { h => 'Optional URL prefix', d => undef } });
+  $opts = get_opts({ prefix    => { h => 'Optional URL prefix', d => undef } });
+
 
 =item type specification
 
 A cheap sanity check can be provided by using Getopt::Long's type specifiers (one of [isof]);
 
-	$opts = get_opts({ timeout => { h => 'HTTP timeout.  Default 30 seconds', d => 30, t => 'i' } });
+  $opts = get_opts({ timeout => { h => 'HTTP timeout.  Default 30 seconds',
+                                  d => 30,
+                                  t => 'i' } });
+
 
 =item validation
 
 You can specify a "verification" routine to check the final value of an option.  If you aren't happy, die.
 
-	$opts = get_opts({ timeout => { h => 'HTTP timeout.  Default 30 seconds', d => 30, v => sub { die("Natural number required") unless shift =~ /^[0-9]+$/ } } });
+  $opts = get_opts({ timeout => { h => 'HTTP timeout.  Default 30 seconds',
+                                  d => 30,
+                                  v => sub { die("max timeout is 60 seconds") if $_[0] > 60 } } });
 
 The return value of this function is otherwise discarded.
+
 
 =item transformation
 
 Used to overwrite the final, post-verification value.  Can be used, eg, to transform strings into arrays.
 
-	$opts = get_opts({ timeout => { h => 'HTTP timeout progression. Defaults to 30,60,90', d => '30,60,90', x => sub { [split(',', shift)] } } }); 
+  $opts = get_opts({ timeout => { h => 'HTTP timeout progression. Defaults to 30,60,90',
+                                  d => '30,60,90',
+                                  x => sub { [split(',', shift)] } } }); 
 
 Other than the use of the return value, this function is essentially identical to the verification function.
 It is way too easy to forget to return the input value from a validation routine, so with this setup we
 don't have to.
 
-XXX TODO - if "validation" and "transformation" can use $_, instead of @_, then we can recombine them
-into one function (don't use the return value, but let the function alter $_)
-
-
 Note that validations are run AFTER transformations.
+
 =back
+
+
 
 The hash for each option accepts the following keys:
 
-	key  mnemonic    description
-	---- ----------- -------------
-	h		 help        the option's help text
-	d    default     default value as scalar or code
-	t    type        type specifier for Getopt::Long specification; one of [isof]
-	v    validation  code to validate the final value of an option
-	x    xform       code to transform the value of an option
+  key  mnemonic    description
+  ---- ----------- -------------
+  h    help        the option's help text
+  d    default     default value as scalar or code
+  t    type        type specifier for Getopt::Long specification; one of [isof]
+  v    validation  code to validate the final value of an option
+  x    xform       code to transform the value of an option
 
 In the future, we may allow the shortcut keys to be specified by the caller ... but let's not get too cute.
 
 
-=head2 EXPORTED FUNCTIONS
-
-No functions are exported by default
+=head2 EXPORT_OK FUNCTIONS
 
 =over 4
+
 
 =item get_opts defaults=HASHREF args=[ARRAYREF]
 
@@ -307,6 +336,7 @@ to the specification of HASHREF.
 Returns a hashref of options as resolved between HASHREF and ARGV/ARRAYREF.
 
 
+
 =item resolve_opts options=HASHREF defaults=HASHREF
 
 Applies the defaults (and validations, and transforms) of 'defaults' to complete 'options'
@@ -314,6 +344,7 @@ Applies the defaults (and validations, and transforms) of 'defaults' to complete
 Does not read ARGV at all - only operates on the two structures given.
 
 Updates $options in place (return value is undefined).
+
 
 
 =item gen_help_table LABEL1, LABEL2, HASH
