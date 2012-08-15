@@ -16,12 +16,14 @@ my $testspec = {
 	timeout   => { h => 'HTTP timeout.  Default 30 seconds', d => 30, t => 'i', x => sub { local ($_) = @_; $_ == 29 ? 'TWENNYNI!' : $_; } },
 	prefix    => { h => 'Optional URL prefix', d => undef },
 	queue     => { h => 'queue to which to post. Defaults to the namespace', d => sub { shift->('namespace') }, v => sub { local ($_) = @_; die("queue too short\n") unless length > 2; } },
+	fqqn      => { h => 'Fully qualified queue name (namespace + queue)', d => sub { join('-',shift->('namespace','queue')) } }
 	};
 
 my $helptext = <<HERE;
 
   option     value
   ---------  ---------------------------------------------------------------------
+  fqqn       Fully qualified queue name (namespace + queue)
   namespace  operational namespace
   timeout    HTTP timeout.  Default 30 seconds
   queue      queue to which to post. Defaults to the namespace
@@ -32,8 +34,8 @@ HERE
 #--------------------------------------------------------------------------------
 # positive tests
 #--------------------------------------------------------------------------------
-is_deeply({namespace => 'foo', queue => 'foo', timeout => 30, prefix => undef}, get_opts($testspec, [qw(-n foo)]), 'undef default value');
-is_deeply({namespace => 'foo', queue => 'foo', timeout => 'TWENNYNI!', prefix => undef}, get_opts($testspec, [qw(-n foo -t 29)]), 'timeout transformed');
+is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', timeout => 30, prefix => undef}, get_opts($testspec, [qw(-n foo)]), 'undef default value');
+is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', timeout => 'TWENNYNI!', prefix => undef}, get_opts($testspec, [qw(-n foo -t 29)]), 'timeout transformed');
 
 #--------------------------------------------------------------------------------
 # negative tests
