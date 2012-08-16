@@ -94,32 +94,32 @@ __END__
 
 =head2 SYNOPSIS
 
-	use Getopt::NounVerb qw(get_nv_opts);
+  use Getopt::NounVerb qw(get_nv_opts);
 
-	my ($noun, $verb, $opts) = get_nv_opts({
-		local           => { h => 'commands to run locally',
-			compile       => { h => 'compile the project found in cwd',
-				release     => { h => 'compile for release?  default no', d => 0 },
-				optimize    => { h => 'enable optimizaion flags.  default yes', d => 1 }
-				},
-			},
-		aa              => { h => 'Absolute Automation management routines',
-			'swap-server' => { h => 'Replace an existing automate server with a new one',
-				old         => 'Old instance ID or name',
-				new         => 'New instance ID or name',
-				},
-			'ssh'         => { h => 'Run an SSH command in parallel against multiple servers',
-				servers     => { h => "comma-separated list of servers", x => sub { [split(',',shift) ] } },
-				command     => 'Command to run',
-				},
-			}
-		});
-	
-	# at this point noun, verb, and opts will all be set.
-	# $noun is guaranteed to be 'local' or 'aa', and likewise
-	# $verb will be on of the acceptable verbs for the given noun
-	# 
-	# if not, get_nv_opts will have already died with a pretty error message
+  my ($noun, $verb, $opts) = get_nv_opts({
+    local           => { h => 'commands to run locally',
+      compile       => { h => 'compile the project found in cwd',
+        release     => { h => 'compile for release?  default no', d => 0 },
+        optimize    => { h => 'enable optimizaion flags.  default yes', d => 1 }
+        },
+      },
+    aa              => { h => 'Absolute Automation management routines',
+      'swap-server' => { h => 'Replace an existing automate server with a new one',
+        old         => 'Old instance ID or name',
+        new         => 'New instance ID or name',
+        },
+      'ssh'         => { h => 'Run an SSH command in parallel against multiple servers',
+        servers     => { h => "comma-separated list of servers", x => sub { [split(',',shift) ] } },
+        command     => 'Command to run',
+        },
+      }
+    });
+  
+  # at this point noun, verb, and opts will all be set.
+  # $noun is guaranteed to be 'local' or 'aa', and likewise
+  # $verb will be one of the acceptable verbs for the given noun
+  # 
+  # if not, get_nv_opts will have already died with a pretty error message
 
 
 
@@ -129,39 +129,39 @@ Getopt::NounVerb will automatically generate help docs at the appropriate level 
 
 Following our example above, if you execute your script with no options, you get this output:
 
-	$ script          # or "script help" or "script --help"
-	
-	Usage: script NOUN VERB <OPTIONS>
-	
-		noun    description
-		------  ------------------------------------------------------------------------
-		local   commands to run locally
-		aa      Absolute Automation management routines
+  $ script          # or "script help" or "script --help"
+  
+  Usage: script NOUN VERB <OPTIONS>
+  
+    noun    description
+    ------  ------------------------------------------------------------------------
+    local   commands to run locally
+    aa      Absolute Automation management routines
 
 If you specify a noun, but no verb, you get the right list of verbs:
 
-	$ script aa       # or "script help aa" etc
-	
-	Usage: script aa VERB <OPTIONS>
-	
-		verb         description
-		-----------  -------------------------------------------------------------------
-		swap-server  Replace an existing automate server with a new one
-		ssh          Run an SSH command in parallel against multiple servers
+  $ script aa       # or "script help aa" etc
+  
+  Usage: script aa VERB <OPTIONS>
+  
+    verb         description
+    -----------  -------------------------------------------------------------------
+    swap-server  Replace an existing automate server with a new one
+    ssh          Run an SSH command in parallel against multiple servers
 
 
 And, finally, if you specify a noun & verb but don't given appropriate options:
 
-	$ script aa ssh
-	
-	Usage: script aa ssh <OPTIONS>
-	
-	ERROR: Missing required parameter: command
-	
-		option   value
-		-------  -----------------------------------------------------------------------
-		servers  comma-separated list of servers; defaults to 'automate'
-		command  Command to run
+  $ script aa ssh
+  
+  Usage: script aa ssh <OPTIONS>
+  
+  ERROR: Missing required parameter: command
+  
+    option   value
+    -------  -----------------------------------------------------------------------
+    servers  comma-separated list of servers; defaults to 'automate'
+    command  Command to run
 
 
 
