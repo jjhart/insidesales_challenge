@@ -47,7 +47,7 @@ sub gen_help_table {
   my $ret = '';
   $ret .= sprintf($fmt, $label1, $label2);
   $ret .= sprintf($fmt, '-'x$len, '-'x(80-2-$len)); # two for the leading spaces
-	$ret . join('', map { sprintf($fmt, $_, $data{$_}) } keys(%data));
+	$ret . join('', map { sprintf($fmt, $_, $data{$_}) } sort keys(%data));
 	}
 
 #--------------------------------------------------------------------------------
