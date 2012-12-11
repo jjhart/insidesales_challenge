@@ -35,8 +35,8 @@ Usage: nounverb.t NOUN VERB <OPTIONS>
 
   noun   description
   -----  -------------------------------------------------------------------------
-  local  commands to run locally
   aa     Absolute Automation management routines
+  local  commands to run locally
 HERE
 
 my $l2 = <<HERE;
@@ -45,8 +45,8 @@ Usage: nounverb.t aa VERB <OPTIONS>
 
   verb         description
   -----------  -------------------------------------------------------------------
-  swap-server  Replace an existing automate server with a new one
   ssh          Run an SSH command in parallel against multiple servers
+  swap-server  Replace an existing automate server with a new one
 HERE
 
 my $l3 = <<HERE;
@@ -55,8 +55,8 @@ Usage: nounverb.t aa ssh <OPTIONS>
 
   option   value
   -------  -----------------------------------------------------------------------
-  servers  comma-separated list of servers
   command  Command to run
+  servers  comma-separated list of servers
 HERE
 
 my $l4 = <<HERE;
@@ -67,8 +67,8 @@ ERROR: Missing required option: servers
 
   option   value
   -------  -----------------------------------------------------------------------
-  servers  comma-separated list of servers
   command  Command to run
+  servers  comma-separated list of servers
 HERE
 
 #--------------------------------------------------------------------------------

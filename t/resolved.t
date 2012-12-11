@@ -25,9 +25,9 @@ my $helptext = <<HERE;
   ---------  ---------------------------------------------------------------------
   fqqn       Fully qualified queue name (namespace + queue)
   namespace  operational namespace
-  timeout    HTTP timeout.  Default 30 seconds
-  queue      queue to which to post. Defaults to the namespace
   prefix     Optional URL prefix
+  queue      queue to which to post. Defaults to the namespace
+  timeout    HTTP timeout.  Default 30 seconds
 
 HERE
 
