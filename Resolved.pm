@@ -18,14 +18,14 @@ use Getopt::Long qw(GetOptionsFromArray);
 sub get_opts {
 	my $d = longhand(shift);
 	my $o = read_opts($d, @_); # note @_ so we pass along alternate $argv if given
-	resolve_opts($o, $d);
+	resolve_opts($d, $o);
 	$o;
 	}
 
 
 # Applies the defaults (and validations, and transforms) of $d to complete $o
 sub resolve_opts {
-	my ($o, $d) = (shift, longhand(shift));
+	my ($d, $o) = (longhand(shift), shift);
 	my @keys = sort { oprank($d, $a) <=> oprank($d, $b) } keys(%$d);
 
 	# write all final values into $o
@@ -304,7 +304,7 @@ Other than the use of the return value, this function is essentially identical t
 It is way too easy to forget to return the input value from a validation routine, so with this setup we
 don't have to.
 
-Note that validations are run AFTER transformations.
+Note that validations run AFTER transformations.
 
 =back
 
@@ -328,7 +328,7 @@ In the future, we may allow the shortcut keys to be specified by the caller ... 
 =over 4
 
 
-=item get_opts defaults=HASHREF args=[ARRAYREF]
+=item get_opts specification=HASHREF args=[ARRAYREF]
 
 Uses GetOptions to parse @ARGV (or GetOptionsFromArray to parse ARRAYREF, if given) according
 to the specification of HASHREF.
@@ -337,9 +337,9 @@ Returns a hashref of options as resolved between HASHREF and ARGV/ARRAYREF.
 
 
 
-=item resolve_opts options=HASHREF defaults=HASHREF
+=item resolve_opts specification=HASHREF options=HASHREF
 
-Applies the defaults (and validations, and transforms) of 'defaults' to complete 'options'
+Applies the defaults (and validations, and transforms) of 'specification' to complete 'options'
 
 Does not read ARGV at all - only operates on the two structures given.
 
