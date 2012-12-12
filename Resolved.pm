@@ -31,9 +31,9 @@ sub resolve_opts {
 	# write all final values into $o
 	map { $o->{$_} = val($o, $d, $_) } @keys; 
 	# run all transforms
-	map { $d->{$_}->{x} and $o->{$_} = $d->{$_}->{x}->($o->{$_}) } @keys;
+	map { $d->{$_}->{x} and $o->{$_} = $d->{$_}->{x}->($o->{$_}, resolve_func($o, $d)) } @keys;
 	# run all validations
-	eval { map { $d->{$_}->{v} and $d->{$_}->{v}->($o->{$_}) } @keys; };
+	eval { map { $d->{$_}->{v} and $d->{$_}->{v}->($o->{$_}, resolve_func($o, $d)) } @keys; };
 	$@ and helpdie($d, $@);
 	# try to combine them using $_
 	}
@@ -76,8 +76,15 @@ sub val {
 	return $o->{$key} if $o->{$key};
 	helpdie($d, "Missing required option: $key") unless exists $d->{$key}->{d};
 	'CODE' eq ref($d->{$key}->{d})
-		? $d->{$key}->{d}->(sub { @_ < 2 ? val($o, $d, @_) : map { val($o, $d, $_) } @_; }) # force scalar context if only one argument
+		? $d->{$key}->{d}->(resolve_func($o, $d)) # force scalar context if only one argument
 		: $d->{$key}->{d};
+	}
+
+# returns a function that pulls values out of $o/$d
+# to be passed into default/validation/transform subs
+sub resolve_func {
+	my ($o, $d) = @_;
+	sub { @_ < 2 ? val($o, $d, @_) : map { val($o, $d, $_) } @_; } # force scalar context if only one argument
 	}
 
 # sort order used in resolve_opts
@@ -289,7 +296,19 @@ You can specify a "verification" routine to check the final value of an option. 
                                   d => 30,
                                   v => sub { die("max timeout is 60 seconds") if $_[0] > 60 } } });
 
+  $opts = get_opts({
+    namespace => 'operational namespace',
+    prefix    => { h => 'optional URL prefix', d => '' },
+    queue     => { h => 'queue to which to post',
+                   d => '',
+                   v => sub { die('--queue requires --namespace') unless $_[1]->('namespace') }
+                   },
+    });
+
 The return value of this function is otherwise discarded.
+
+The first argument to the validation function is the resolved value of the option; the second is a closure
+which can be used to check the values of other options (same as the first arg to 'defaults' subs).
 
 
 =item transformation
@@ -305,6 +324,10 @@ It is way too easy to forget to return the input value from a validation routine
 don't have to.
 
 Note that validations run AFTER transformations.
+
+The first argument to the transformation function is the resolved-and-validated
+value of the option; the second is a closure which can be used to check the
+values of other options (same as the first arg to 'defaults' subs).
 
 =back
 
