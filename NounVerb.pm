@@ -1,6 +1,6 @@
 package Getopt::NounVerb;
 use base qw(Exporter);
-@EXPORT_OK = qw(get_nv_opts);
+@EXPORT_OK = qw(get_nv_opts opfunc);
 %EXPORT_TAGS = ( all => \@EXPORT_OK );
 
 use strict;
@@ -25,6 +25,14 @@ sub get_nv_opts {
 	$@ and helpdie($cmds, $noun, $verb, $@);
 
 	($noun, $verb, $opts);
+	}
+
+# resolve a noun,verb pair into a main pkg function reference
+sub opfunc {
+	my ($n,$v) = @_;
+	my $func = "main::${n}-${v}";
+	$func =~ s~-~_~g;
+	eval("\\&${func}");
 	}
 
 #--------------------------------------------------------------------------------
@@ -184,5 +192,12 @@ No functions are exported by default
 =item get_nv_opts commands=HASHREF args=[ARRAYREF]
 
 Returns a (noun, verb, options) list as described above.
+
+=item opfunc NOUN VERB
+
+Returns a function reference for "main::NOUN_VERB"; typically used like so:
+
+  my ($NOUN, $VERB, $OPTS) = get_nv_opts(...);
+  opfunc($NOUN, $VERB)->($OPTS); # execute NOUN_VERB function defined here
 
 =cut
