@@ -8,7 +8,23 @@ use warnings;
 
 use Test::More qw(no_plan);
 
-use Getopt::Resolved qw(get_opts);
+use Getopt::Resolved qw(get_opts resolve_opts);
+
+#--------------------------------------------------------------------------------
+# resolve_opts
+#--------------------------------------------------------------------------------
+my $d = {
+	foo => { h => '', d => sub { join(',', sort((shift)->())); } }
+	};
+my $o = {
+	yada => 'a',
+	yo   => 'b'
+	};
+is_deeply({ foo => 'foo,yada,yo', yada => 'a', yo => 'b' }, resolve_opts($d, $o));
+
+#--------------------------------------------------------------------------------
+# get_opts
+#--------------------------------------------------------------------------------
 
 
 my $testspec = {

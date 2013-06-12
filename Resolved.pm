@@ -19,7 +19,6 @@ sub get_opts {
 	my $d = longhand(shift);
 	my $o = read_opts($d, @_); # note @_ so we pass along alternate $argv if given
 	resolve_opts($d, $o);
-	$o;
 	}
 
 
@@ -35,7 +34,9 @@ sub resolve_opts {
 	# run all validations
 	eval { map { $d->{$_}->{v} and $d->{$_}->{v}->($o->{$_}, resolve_func($o, $d)) } @keys; };
 	$@ and helpdie($d, $@);
-	# try to combine them using $_
+
+	# return the now-resolved $o
+	$o; 
 	}
 
 # generate a pretty help table from a hash - keys become col1, values col2
@@ -82,9 +83,19 @@ sub val {
 
 # returns a function that pulls values out of $o/$d
 # to be passed into default/validation/transform subs
+# 0 arguments: return all unique keys in ($o,$d), as list
+# 1 argument: value of that key, as scalar
+# 2+ arguments: values of those keys, as list
 sub resolve_func {
 	my ($o, $d) = @_;
-	sub { @_ < 2 ? val($o, $d, @_) : map { val($o, $d, $_) } @_; } # force scalar context if only one argument
+	sub { @_ == 0 ? uniq_keys(%$o, %$d) : @_ < 2 ? val($o, $d, @_) : map { val($o, $d, $_) } @_; } # force scalar context if only one argument
+	}
+
+# 'keys' is finicky and won't let us do things like "keys(%$o, %$d)"
+# so we collapse them when passing into @_
+sub uniq_keys {
+	my (%hash) = @_;
+	keys(%hash);
 	}
 
 # sort order used in resolve_opts
@@ -269,7 +280,9 @@ Your subroutine can, of course, do anything it wants:
     });
 
 As shown, these functions are given as their first (and only) argument a closure which can be used to get the
-values of other options.
+values of other options.  If given 1 option name, the closure returns the value of that option as a scalar.
+If called with 2+ options, the corresponding values are returned as a list.  If called with 0 arguments,
+it returns a list of all unique option names in the input and the specification.
 
 Circular option references are not supported.  Nor is dividing by zero =)
 
@@ -366,7 +379,7 @@ Applies the defaults (and validations, and transforms) of 'specification' to com
 
 Does not read ARGV at all - only operates on the two structures given.
 
-Updates $options in place (return value is undefined).
+Updates $options in place *and* returns it for chaining.
 
 
 
