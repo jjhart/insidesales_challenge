@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
 use FindBin;
 use lib "$FindBin::Bin/../..";
-use use_thirdparty_libs;
 
 use strict;
 use warnings;
