@@ -110,11 +110,6 @@ sub oprank {
 #--------------------------------------------------------------------------------
 # internals - other
 #--------------------------------------------------------------------------------
-sub d {
-	use Data::Dump qw(dump);
-	print dump(@_);
-	}
-
 # normalizes "shorthand" options that uses scalar helptext format
 # in: { key1 => 'help text1', key2 => { h => 'help text2', d => 0 } }
 # out:{ key1 => { h => 'help text1' }, key2 => { h => 'help text2', d => 0 } } 
