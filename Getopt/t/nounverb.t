@@ -62,7 +62,7 @@ my $l4 = <<HERE;
 
 Usage: nounverb.t aa ssh <OPTIONS>
 
-ERROR: Missing required option: servers
+ERROR: Missing required option: command
 
   option   value
   -------  -----------------------------------------------------------------------

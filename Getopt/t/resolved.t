@@ -31,7 +31,8 @@ my $testspec = {
 	timeout   => { h => 'HTTP timeout.  Default 30 seconds', d => 30, t => 'i', x => sub { local ($_) = @_; $_ == 29 ? 'TWENNYNI!' : $_; } },
 	prefix    => { h => 'Optional URL prefix', d => undef },
 	queue     => { h => 'queue to which to post. Defaults to the namespace', d => sub { shift->('namespace') }, v => sub { local ($_) = @_; die("queue too short\n") unless length > 2; } },
-	fqqn      => { h => 'Fully qualified queue name (namespace + queue)', d => sub { join('-',shift->('namespace','queue')) }, v => sub { die('wut') unless $_[1]->('timeout') } }
+	fqqn      => { h => 'Fully qualified queue name (namespace + queue)', d => sub { join('-',shift->('namespace','queue')) }, v => sub { die('wut') unless $_[1]->('timeout') } },
+	push      => { h => 'Push changes to production? Default 1', d => 1 }
 	};
 
 my $helptext = <<HERE;
@@ -41,6 +42,7 @@ my $helptext = <<HERE;
   fqqn       Fully qualified queue name (namespace + queue)
   namespace  operational namespace
   prefix     Optional URL prefix
+  push       Push changes to production? Default 1
   queue      queue to which to post. Defaults to the namespace
   timeout    HTTP timeout.  Default 30 seconds
 
@@ -49,9 +51,10 @@ HERE
 #--------------------------------------------------------------------------------
 # positive tests
 #--------------------------------------------------------------------------------
-is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', timeout => 30, prefix => undef}, get_opts($testspec, [qw(-n foo)]), 'undef default value');
-is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', timeout => 30, prefix => undef, verbose => 1}, get_opts($testspec, [qw(-n foo -v)]), 'verbose flag added');
-is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', timeout => 'TWENNYNI!', prefix => undef}, get_opts($testspec, [qw(-n foo -t 29)]), 'timeout transformed');
+is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', push => 1, timeout => 30, prefix => undef}, get_opts($testspec, [qw(-n foo)]), 'undef default value');
+is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', push => 0, timeout => 30, prefix => undef}, get_opts($testspec, [qw(-n foo --push 0)]), 'falsey value (0) overrides default truthy value (push 0)');
+is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', push => 1, timeout => 30, prefix => undef, verbose => 1}, get_opts($testspec, [qw(-n foo -v)]), 'verbose flag added');
+is_deeply({namespace => 'foo', queue => 'foo', fqqn => 'foo-foo', push => 1, timeout => 'TWENNYNI!', prefix => undef}, get_opts($testspec, [qw(-n foo -t 29)]), 'timeout transformed');
 
 #--------------------------------------------------------------------------------
 # negative tests
