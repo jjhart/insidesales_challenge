@@ -32,7 +32,7 @@ Challenge part 2 / I'm done with part 1, now what?
 The second part of the challenge is writing a script to upload your updated repo
 to Amazon Simple Storage Service (S3) so we can see your results.
 
-Contact ________@insidesales.com and provide us with an AWS username you control.
+Contact perlchallenge@insidesales.com and provide us with an AWS username you control.
 
 We will respond by creating an S3 bucket and giving you read/write access to it.
 
