@@ -1,8 +1,16 @@
 Perl challenge
 ================================================================================
 
-The command-line parsing library code in this repo contains two bugs.
+Welcome to the InsideSales Perl challenge!  We expect an experienced Perl developer
+to take roughly 2 hours, total, to finish the challenge - 45 minutes or so for
+the first piece, and 60-90 minuts for the second part.
 
+
+Challenge part 1
+--------------------------------------------------------------------------------
+
+The command-line parsing library code in this repo contains two bugs, explained
+below.  Fix both of them in separate commits to your local insidesales_challenge repo.
 
 ##### Help output is unstable in certain circumstances
 
@@ -15,14 +23,6 @@ If you run `Getopt/t/nounverb.t` multiple times, test 24 (*"missing required par
 If you try, the option will retain its default value instead of the '0' provided on the command line
 
 See `Getopt/t/resolved.t` test #3 (*"falsey value (0) overrides default truthy value (push 0)"*)
-
-
-
-Challenge part 1
---------------------------------------------------------------------------------
-
-Fix both of the above bugs, in separate commits.  Update any perldoc that
-should be updated.   Commit to your local insidesales_challenge repo.
 
 
 
