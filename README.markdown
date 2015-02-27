@@ -2,8 +2,8 @@ Perl challenge
 ================================================================================
 
 Welcome to the InsideSales Perl challenge!  We expect an experienced Perl
-developer to take ~ 2 to finish the challenge - 45 minutes or so for the first
-part, and 60-90 minutes for the second part.
+developer to take ~ 2 hours to finish the challenge - 45 minutes or so for the
+first part, and 60-90 minutes for the second part.
 
 
 Challenge part 1
