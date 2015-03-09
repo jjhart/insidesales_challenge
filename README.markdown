@@ -16,7 +16,7 @@ below.  Fix both of them in separate commits to your local insidesales_challenge
 
 If you run `Getopt/t/nounverb.t` multiple times, test 24 (*"missing required parameter helptext correct"*) will fail about 50% of the time.
 
-*Note - if you are on Windows, it will fail 100% of the time.  Extra credit: why?*
+*Note - on certain distros, particularly on Windows, this test may consistently pass or fail 100% of the time.  Extra credit: why?*
 
 Update GetOpt::Resolved.pm to ensure the help output matches the expected output.
 
