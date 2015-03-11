@@ -36,7 +36,7 @@ Challenge part 2 / I'm done with part 1, now what?
 The second part of the challenge is writing a script to upload your updated repo
 to Amazon Simple Storage Service (S3) so we can see your results.
 
-Contact perlchallenge@insidesales.com and provide us with an AWS username you control.
+Contact perlchallenge@insidesales.com and provide us with an AWS username you control.  You can find your "Canonical User Id" in the "Account Identifiers" section of the "Security Credentials" page of the AWS Console.
 
 We will respond by creating an S3 bucket and giving you read/write access to it.
 
